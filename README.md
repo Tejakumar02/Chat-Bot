@@ -1,7 +1,7 @@
 # ChatBot — Local ChatGPT-style UI for Ollama
 
 A Streamlit front end for Ollama with model switching, RAG (PDF upload),
-free web search, an autonomous "God Mode," and password-protected admin
+free web search, an autonomous "Smart Mode," and password-protected admin
 settings. 100% local and free — the only paid component would be your own
 hardware running Ollama.
 
@@ -55,7 +55,7 @@ streamlit run app.py
   to another chat in the sidebar, and that same document is still active
   there. This was a deliberate scope cut for build speed — worth fixing if
   this becomes more than a demo.
-- **God Mode's self-judgment is inconsistent.** Small/fast local models
+- **Smart Mode's self-judgment is inconsistent.** Small/fast local models
   (which is what this whole setup is built around) are known to be
   unreliable at recognizing their own knowledge gaps — they'll sometimes
   answer confidently instead of triggering a search. Test this specifically

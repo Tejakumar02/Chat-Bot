@@ -144,18 +144,18 @@ st.markdown(
             border-top: 1px solid #2f2f2f;
         }
 
-        # .empty-state {
-        #     text-align: center;
-        #     margin-top: 16vh;
-        #     color: #6e6e80;
-        # }
-        # .empty-state h2 { color: #353740; font-weight: 600; }
-
+        
         .empty-state {
             text-align: center;
             margin-top: 16vh;
             color: #9a9aa5;
         }
+        .empty-state {
+            text-align: center;
+            transform: translateY(20px);
+            color: #9a9aa5;
+        }
+        
         .empty-state h2 { color: #ececec; font-weight: 600; }
 
         [data-testid="stChatMessage"] {
@@ -184,33 +184,18 @@ st.markdown(
             padding-bottom: 0.3rem;
         }
     
-        # }
-
-        # .st-key-websearch_bar {
-        #     position: fixed;
-        #     bottom: 72px;
-        #     left: 50%;
-        #     transform: translateX(250px);
-        #     z-index: 999;
-        #     width: fit-content !important;
-        #     zoom: 1.0;
-        #     background: #f7f7f8;
-        #     padding: 2px 10px;
-        #     border-radius: 16px;
-        #     box-shadow: 0 -2px 6px rgba(0,0,0,0.06);
-        #     font-size: 0.85rem;
-        }
+     
 
         .st-key-websearch_bar {
             position: fixed;
-            bottom: 72px;
-            left: 50%;
+            bottom: 115px;
+            left: 7.5%;
             transform: translateX(250px);
             z-index: 999;
             width: fit-content !important;
             zoom: 1.0;
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
+            background: # transparent;
+            border: 1px solid # transparent ;
             padding: 2px 10px;
             border-radius: 16px;
             box-shadow: 0 -2px 8px rgba(0,0,0,0.4);
@@ -233,7 +218,93 @@ st.markdown(
             margin-left: -250px;
             max-width: 140px;
         }
-        
+
+        /* 1. Password input box — always visible, not just on hover */
+        section[data-testid="stSidebar"] [data-testid="stExpander"] div[data-baseweb="input"],
+        section[data-testid="stSidebar"] [data-testid="stExpander"] div[data-baseweb="input"] input {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        /* 2. Sidebar collapse/close arrow button — always visible */
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+            opacity: 1 !important;
+            visibility: visible !important;
+            display: flex !important;
+        }
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button {
+            opacity: 1 !important;
+            background-color: transparent !important;
+        }
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button svg {
+            opacity: 1 !important;
+            fill: #ececec !important;
+        }
+
+        /* 3. Scrollbar — always visible inside sidebar */
+        section[data-testid="stSidebar"] ::-webkit-scrollbar {
+            width: 4px !important;
+        }
+
+        section[data-testid="stSidebar"] ::-webkit-scrollbar-track {
+            background: #171717 !important;
+        }
+
+        section[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {
+            background-color: #3a3a3a !important;
+            border-radius: 4px !important;
+            opacity: 1 !important;
+        }
+
+        /* 4. All sidebar elements — force full visibility at all times */
+        section[data-testid="stSidebar"] * {
+            opacity: 1 !important;
+        }
+        /* 1. Password box — make border always visible */
+        section[data-testid="stSidebar"] [data-testid="stExpander"] div[data-baseweb="input"] {
+            border-left-color: #4a4a4a !important;
+            border-right-color: #4a4a4a !important;
+            border-top-color: #4a4a4a !important;
+            border-bottom-color: #4a4a4a !important;
+        }
+
+        /* 2. Sidebar partition line — always visible */
+        .st-emotion-cache-f6dru8 {
+            background-color: #3a3a3a !important;
+            width: 2px !important;
+            background-image: none !important;
+        }
+
+        .st-emotion-cache-f6dru8:hover {
+            background-color: #10a37f !important;
+            width: 3px !important;
+        }
+
+        /* 3. Scrollbar — override the global transparent rule */
+        section[data-testid="stSidebar"] {
+            scrollbar-color: #3a3a3a #171717 !important;
+            scrollbar-width: thin !important;
+        }
+
+        section[data-testid="stSidebar"]::-webkit-scrollbar {
+            width: 4px !important;
+            display: block !important;
+        }
+
+        section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
+            background-color: #3a3a3a !important;
+            border-radius: 4px !important;
+        }
+
+        section[data-testid="stSidebar"]::-webkit-scrollbar-track {
+            background: #171717 !important;
+        }
+        [data-testid="stAppDeployButton"] {
+            display: none !important;
+        }
+                
     </style>
     """,
     unsafe_allow_html=True,
@@ -326,9 +397,9 @@ def needs_web_search(model: str, user_text: str) -> bool:
 # Sidebar — new chat, history, admin settings, mode switch
 # --------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown('<div class="sidebar-title">🤖 ChatBot</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-title"> ⚛ ChatBot</div>', unsafe_allow_html=True)
 
-    if st.button("➕  New chat", use_container_width=True, key="new_chat_btn"):
+    if st.button("✙  New chat", use_container_width=True, key="new_chat_btn"):
         new_chat()
         st.rerun()
 
@@ -341,13 +412,13 @@ with st.sidebar:
     for chat_id, chat in chat_items:
         is_active = chat_id == st.session_state.current_chat_id
         label = ("● " if is_active else "") + chat["title"]
-        col_select, col_delete = st.columns([5, 1])
+        col_select, col_delete = st.columns([3.5, 1])
         with col_select:
             if st.button(label, key=f"select_{chat_id}", use_container_width=True):
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
         with col_delete:
-            if st.button("🗑", key=f"del_{chat_id}"):
+            if st.button( " 🗑️ " , key=f"del_{chat_id}"):
                 delete_chat(chat_id)
                 st.rerun()
 
