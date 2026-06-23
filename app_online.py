@@ -46,7 +46,7 @@ def search_chunks(query, chunks, embeddings, n=3):
 # ---- UI ----
 st.set_page_config(page_title="Local AI Assistant", page_icon="🤖")
 st.title("🤖 My Local AI Chatbot")
-st.caption("Powered by Groq — Fast & Free")
+
 
 # User ID from URL
 params = st.query_params
@@ -65,9 +65,9 @@ if "pdf_store" not in st.session_state:
 
 with st.sidebar:
     st.header("⚙️ Settings")
-    st.caption(f"Your ID: `{st.session_state.user_id[:8]}...`")
+   
 
-    model_options = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
+    model_options = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
     selected_model = st.selectbox("Choose a model", model_options)
     system_prompt = st.text_area("System Prompt", value="You are a helpful assistant.")
 
