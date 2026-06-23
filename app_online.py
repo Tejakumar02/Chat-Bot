@@ -64,7 +64,7 @@ if "pdf_store" not in st.session_state:
     st.session_state.pdf_store = {}
 
 with st.sidebar:
-    col1, col2 = st.columns([5, 1])
+    col1, col2 = st.columns([3.5, 1])
 
     with col1:
         st.header("⚙️ Settings")
