@@ -64,7 +64,16 @@ if "pdf_store" not in st.session_state:
     st.session_state.pdf_store = {}
 
 with st.sidebar:
-    st.header("⚙️ Settings")
+    col1, col2 = st.columns([5, 1])
+
+    with col1:
+        st.header("⚙️ Settings")
+
+    with col2:
+        if st.button("🗑️", help="Clear Chat"):
+            clear_messages(st.session_state.user_id)
+            st.session_state.messages = []
+            st.rerun()
    
 
     model_options = ["llama-3.1-8b-instant", "llama-3.3-70b-versatile"]
@@ -100,11 +109,7 @@ with st.sidebar:
         chat_text = "\n\n".join([f"{'You' if m['role'] == 'user' else 'AI'}:\n{m['content']}" for m in st.session_state.messages])
         st.download_button("⬇️ Download as .txt", data=chat_text, file_name="chat_export.txt", mime="text/plain")
 
-    st.divider()
-    if st.button("🗑️ Clear Chat"):
-        clear_messages(st.session_state.user_id)
-        st.session_state.messages = []
-        st.rerun()
+   
 
 # ---- CHAT ----
 for message in st.session_state.messages:
