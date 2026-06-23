@@ -1,5 +1,6 @@
 .venv
 utils/__pycache__
 utils/__pycache__/*
-
+.env
+.streamlit/secrets.toml
 #Supabase123
