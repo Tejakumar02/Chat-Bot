@@ -70,7 +70,7 @@ with st.sidebar:
         st.header("⚙️ Settings")
 
     with col2:
-        if st.button("🗑️", help="Clear Chat"):
+        if st.button("🗑️ Clear Chat"):
             clear_messages(st.session_state.user_id)
             st.session_state.messages = []
             st.rerun()
