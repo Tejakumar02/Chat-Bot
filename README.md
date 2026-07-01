@@ -83,4 +83,4 @@ chatbot_app/
 ├── requirements.txt
 └── README.md
 ```
-Live: https://chat-bot-teja.streamlit.app/?user_id=eb7b34e5-a29d-49a0-b210-84de4dbceb5a
+Live: https://greenyai.streamlit.app/
