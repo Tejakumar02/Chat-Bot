@@ -83,4 +83,5 @@ chatbot_app/
 ├── requirements.txt
 └── README.md
 ```
+# app_online.py is separate file for online it has some similar features like app.py
 Live: https://greenyai.streamlit.app/
