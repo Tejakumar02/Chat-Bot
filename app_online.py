@@ -6,6 +6,16 @@ from sentence_transformers import SentenceTransformer
 from supabase import create_client
 import uuid
 
+# ---- NEW: imports for live date/time + web search ----
+from datetime import datetime
+import streamlit.components.v1 as components
+try:
+    from tavily import TavilyClient
+    TAVILY_AVAILABLE = True
+except ImportError:
+    TAVILY_AVAILABLE = False
+# ---- END NEW ----
+
 # ---- PAGE CONFIG (must be first) ----
 st.set_page_config(
     page_title="Greeny-AI ",
@@ -571,6 +581,11 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button 
 </style>
 """, unsafe_allow_html=True)
 
+# ---- NEW: styling for the web-search toggle button is applied directly by
+# the JS component further below (via st.iframe), not via CSS
+# classes here — this avoids relying on Streamlit's container(key=) feature,
+# which only exists in newer Streamlit versions. ----
+
 # ---- SETUP ----
 @st.cache_resource
 def load_embedder():
@@ -613,6 +628,51 @@ def search_chunks(query, chunks, embeddings, n=3):
     top_indices = scores.argsort()[-n:][::-1]
     return [chunks[i] for i in top_indices]
 
+# ---- NEW: DATE/TIME + WEB SEARCH UTILS ----
+def get_current_datetime_str():
+    """Returns the real current date/time from the system clock."""
+    return datetime.now().strftime("%A, %B %d, %Y - %I:%M %p")
+
+def needs_web_search(query):
+    """Lightweight keyword auto-detect for queries that likely need live info."""
+    keywords = [
+        "today", "current", "currently", "latest", "recent", "recently",
+        "now", "this week", "this month", "this year", "right now",
+        "news", "update", "weather", "score", "stock price", "exchange rate",
+        "live", "breaking", "happening now", "as of today",
+        "what date", "what's the date", "what time", "what's the time",
+        "who is the current", "who is the president", "who is the prime minister"
+    ]
+    q = query.lower()
+    return any(k in q for k in keywords)
+
+def tavily_web_search(query, max_results=5):
+    """
+    Runs a live web search via Tavily and returns (context_text, sources_list).
+    Fails silently (returns empty results) if the package or API key is missing,
+    so the rest of the chat flow is never blocked.
+    """
+    if not TAVILY_AVAILABLE:
+        return "", []
+    if "TAVILY_API_KEY" not in st.secrets:
+        return "", []
+    try:
+        client = TavilyClient(api_key=st.secrets["TAVILY_API_KEY"])
+        response = client.search(query=query, max_results=max_results)
+        results = response.get("results", [])
+        context_parts = []
+        sources = []
+        for r in results:
+            title = r.get("title", "Source")
+            content = r.get("content", "")
+            url = r.get("url", "")
+            context_parts.append(f"Source: {title}\n{content}")
+            sources.append({"title": title, "url": url})
+        return "\n\n".join(context_parts), sources
+    except Exception:
+        return "", []
+# ---- END NEW ----
+
 # ---- SESSION STATE ----
 if "pending_message" not in st.session_state:
     st.session_state.pending_message = ""
@@ -629,6 +689,11 @@ if "messages" not in st.session_state:
 
 if "pdf_store" not in st.session_state:
     st.session_state.pdf_store = {}
+
+# ---- NEW: web search toggle state ----
+if "web_search_enabled" not in st.session_state:
+    st.session_state.web_search_enabled = False
+# ---- END NEW ----
 
 # ---- SIDEBAR ----
 with st.sidebar:
@@ -727,11 +792,92 @@ if selected_pdf:
     <div class="rag-pill">⚡ RAG active — querying <strong>{selected_pdf[:30]}</strong></div>
     """, unsafe_allow_html=True)
 
+if st.session_state.web_search_enabled:
+    st.markdown("""
+    <div class="rag-pill">🌐 Live web search — ON</div>
+    """, unsafe_allow_html=True)
+
 # ---- STEP 1: CAPTURE INPUT FIRST ----
 pending = st.session_state.get("pending_message", "")
 if pending:
     st.session_state.pending_message = ""
     st.session_state.chips_used = True
+
+# ---- NEW: WEB SEARCH TOGGLE BUTTON (placed left of the chat bar) ----
+# Plain st.button (no container/key-class dependency) — works on every Streamlit version.
+if st.button("🌐", key="web_toggle_btn", help="Toggle live web search"):
+    st.session_state.web_search_enabled = not st.session_state.web_search_enabled
+    st.rerun()
+
+# components.v1.html is the correct/supported way to run custom JS in Streamlit
+# (unlike scripts injected via st.markdown, which browsers often silently ignore).
+# It finds the button by its emoji text — no reliance on any Streamlit-version-
+# specific CSS class — styles it, then pins it beside the real chat input.
+_web_toggle_on_js = "true" if st.session_state.web_search_enabled else "false"
+
+components.html(
+    """
+    <script>
+    (function() {
+        const enabled = """ + _web_toggle_on_js + """;
+
+        function styleAndPositionWebToggle() {
+            const parentDoc = window.parent.document;
+            const buttons = parentDoc.querySelectorAll('button');
+            let toggleBtn = null;
+            buttons.forEach(function(b) {
+                if (b.textContent.trim() === '\U0001F310') { toggleBtn = b; }
+            });
+            if (!toggleBtn) return;
+
+            toggleBtn.style.setProperty('width', '44px', 'important');
+            toggleBtn.style.setProperty('height', '44px', 'important');
+            toggleBtn.style.setProperty('min-height', '44px', 'important');
+            toggleBtn.style.setProperty('border-radius', '50%', 'important');
+            toggleBtn.style.setProperty('font-size', '1.15rem', 'important');
+            toggleBtn.style.setProperty('padding', '0', 'important');
+            toggleBtn.style.setProperty('display', 'flex', 'important');
+            toggleBtn.style.setProperty('align-items', 'center', 'important');
+            toggleBtn.style.setProperty('justify-content', 'center', 'important');
+
+            if (enabled) {
+                toggleBtn.style.setProperty('background', 'linear-gradient(135deg, #006241, #00A86B)', 'important');
+                toggleBtn.style.setProperty('border', '1px solid #00A86B', 'important');
+                toggleBtn.style.setProperty('color', '#fff', 'important');
+                toggleBtn.style.setProperty('box-shadow', '0 0 14px rgba(0,98,65,0.4)', 'important');
+            } else {
+                toggleBtn.style.setProperty('background', '#1A1D1A', 'important');
+                toggleBtn.style.setProperty('border', '1px solid rgba(0,98,65,0.25)', 'important');
+                toggleBtn.style.setProperty('color', '#9CA39C', 'important');
+                toggleBtn.style.setProperty('box-shadow', 'none', 'important');
+            }
+
+            const wrapper = toggleBtn.closest('div[data-testid="stElementContainer"], div.element-container') || toggleBtn;
+            wrapper.style.setProperty('position', 'fixed', 'important');
+            wrapper.style.setProperty('width', 'auto', 'important');
+            wrapper.style.setProperty('z-index', '1000', 'important');
+
+            const chatInput = parentDoc.querySelector('[data-testid="stChatInput"]');
+            if (chatInput) {
+                const rect = chatInput.getBoundingClientRect();
+                wrapper.style.setProperty('top', (rect.top + rect.height / 2 - 22) + 'px', 'important');
+                wrapper.style.setProperty('left', (rect.left - 54) + 'px', 'important');
+                wrapper.style.setProperty('bottom', 'auto', 'important');
+            } else {
+                wrapper.style.setProperty('bottom', '18px', 'important');
+                wrapper.style.setProperty('left', '20px', 'important');
+                wrapper.style.setProperty('top', 'auto', 'important');
+            }
+        }
+
+        styleAndPositionWebToggle();
+        setInterval(styleAndPositionWebToggle, 400);
+        window.parent.addEventListener('resize', styleAndPositionWebToggle);
+    })();
+    </script>
+    """,
+    height=0,
+)
 
 user_input = st.chat_input("Ask anything...")
 
@@ -817,19 +963,46 @@ with st.chat_message("assistant"):
     full_response = ""
     groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+    effective_system_prompt = system_prompt + (
+        f"\n\nCurrent date and time: {get_current_datetime_str()}. "
+        "Always use this exact date/time if the user asks what today's date, "
+        "the day of the week, or the current time is — never guess or rely on "
+        "your training cutoff for this."
+    )
+
+  
+    use_web_search = st.session_state.web_search_enabled or needs_web_search(user_input)
+    web_context, web_sources = "", []
+    if use_web_search:
+        with st.spinner("Searching the web..."):
+            web_context, web_sources = tavily_web_search(user_input)
+
+
     if selected_pdf and selected_pdf in st.session_state.pdf_store:
         store = st.session_state.pdf_store[selected_pdf]
         relevant = search_chunks(user_input, store["chunks"], store["embeddings"])
         context = "\n\n".join(relevant)
+       
+        if web_context:
+            context += f"\n\nLive web results:\n{web_context}"
+        
         rag_prompt = f"Use this context to answer:\n\n{context}\n\nQuestion: {user_input}"
         messages_to_send = (
-            [{"role": "system", "content": system_prompt}]
+            [{"role": "system", "content": effective_system_prompt}]
             + st.session_state.messages[:-1]
             + [{"role": "user", "content": rag_prompt}]
         )
+    elif web_context:
+        web_prompt = f"Use these live web search results to answer accurately:\n\n{web_context}\n\nQuestion: {user_input}"
+        messages_to_send = (
+            [{"role": "system", "content": effective_system_prompt}]
+            + st.session_state.messages[:-1]
+            + [{"role": "user", "content": web_prompt}]
+        )
+ 
     else:
         messages_to_send = (
-            [{"role": "system", "content": system_prompt}]
+            [{"role": "system", "content": effective_system_prompt}]
             + st.session_state.messages
         )
 
@@ -845,5 +1018,12 @@ with st.chat_message("assistant"):
             placeholder.markdown(full_response + "▌")
     placeholder.markdown(full_response)
 
+    if web_sources:
+        sources_md = "\n\n---\n**🌐 Sources:**\n" + "\n".join(
+            [f"- [{s['title']}]({s['url']})" for s in web_sources if s.get("url")]
+        )
+        full_response += sources_md
+        placeholder.markdown(full_response)
+  
 st.session_state.messages.append({"role": "assistant", "content": full_response})
 save_message(st.session_state.user_id, "assistant", full_response)
