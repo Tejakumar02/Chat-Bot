@@ -238,17 +238,13 @@ div[data-testid="stMain"] div[data-testid="stHorizontalBlock"] div[data-testid="
 
 /* ── MAIN AREA ── */
 [data-testid="stMain"] .block-container {
-    padding: 2rem 2.5rem !important;
+    padding-top: 0 !important;
+    padding-right: 2.5rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 2.5rem !important;
     max-width: 860px !important;
 }
 
-/* NEW: Streamlit reserves a tall default header bar above .block-container.
-Hiding stToolbar's icons first, then collapsing the now-empty header down to
-0 height, avoids the old glitch of clipped hamburger/Deploy icon fragments.
-Safe to fully collapse (not just shrink to 2rem): the sidebar's own collapse
-button lives inside stSidebar (styled separately below) and the floating
-reopen control is its own independent element — neither sits inside, or
-depends on the height of, stHeader. */
 [data-testid="stToolbar"] {
     display: block !important;
 }
@@ -257,43 +253,16 @@ depends on the height of, stHeader. */
     min-height: auto !important;
 }
 
-/* NEW: Streamlit adds a default top gap before the first block in the main
-area (independent of stHeader). Zeroing it out on the very first element
-container in stMain is what actually pulls the model pill up to the true
-top of the page, rather than leaving a residual gap even after stHeader is
-collapsed above. */
 [data-testid="stMain"] .block-container > div:first-child {
     margin-top: 0 !important;
     padding-top: 0 !important;
 }
 
-/* NEW: raw <iframe> elements get a visible default border from the browser's
-own stylesheet unless explicitly reset — this app has 3 zero-content utility
-iframes (for icon positioning + button tagging), each just 1px tall, so an
-unreset default border on each would show as exactly the kind of small line
-fragments being reported. */
 iframe {
     border: none !important;
     display: block !important;
 }
 
-/* NEW (superseded twice): overflow/scrollbar-hiding CSS on stIFrame was
-tried first and didn't work — a native iframe's scrollbar is controlled by
-its `scrolling` HTML attribute, which outer CSS can't reliably override.
-Switching to components.html(scrolling=False) was tried next, but that API
-is deprecated and removed after 2026-06-01 in favor of st.iframe(). The
-actual, lasting fix: st.iframe() hardcodes scrolling=True for raw HTML with
-no override (confirmed in Streamlit's source), so instead each srcdoc string
-below now opens with a small inline CSS reset (html/body margin, padding,
-and height zeroed, overflow hidden) — with the default body margin zeroed
-out, there's nothing left to overflow, so the scrollbar never appears
-regardless of the scrolling attribute. This CSS block is left in as a
-harmless no-op belt-and-braces rule, not as the fix itself.
-NOTE: never spell out a literal closing style-tag sequence inside this
-comment (or anywhere else in this global stylesheet) — the browser's HTML
-parser treats <style> content as raw text and closes the tag on the first
-literal match, even inside a /* comment */. Doing that once is exactly what
-dumped all the CSS below as visible page text. */
 [data-testid="stIFrame"] {
     overflow: hidden !important;
     scrollbar-width: none !important;
@@ -302,16 +271,6 @@ dumped all the CSS below as visible page text. */
     width: 0 !important;
     height: 0 !important;
     display: none !important;
-}
-
-/* ── TOP HEADER ── */
-.top-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 1.2rem;
-    border-bottom: 1px solid var(--border-subtle);
-    margin-bottom: 1.5rem;
 }
 
 .header-left h1 {
@@ -331,21 +290,6 @@ dumped all the CSS below as visible page text. */
     color: var(--text-muted);
     margin: 3px 0 0;
     font-weight: 400;
-}
-
-.model-pill {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 5px 14px;
-    font-size: 0.75rem;
-    color: var(--accent-light);
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
 }
 
 .model-pill::before {
@@ -423,22 +367,16 @@ dumped all the CSS below as visible page text. */
 }
 
 /* ── EMPTY STATE — centered like ChatGPT ── */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 0rem 2rem 0.3rem;
+.welcome-wrapper {
+    margin-top: 45px;
+    margin-bottom: -20px;
     text-align: center;
-    gap: 0.5rem;
 }
 
 .empty-title {
     font-size: 1.9rem;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.5px;
-    margin-bottom: 0.2rem;
 }
 
 section[data-testid="stMain"] div[data-testid="stHorizontalBlock"] button[kind="secondary"] {
@@ -575,7 +513,6 @@ section[data-testid="stSidebar"]::-webkit-scrollbar-thumb:hover {
 }
             
 /* ── SIDEBAR CLOSE BUTTON ── */
-/* ── SIDEBAR CLOSE BUTTON — always visible ── */
 section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
     opacity: 1 !important;
     visibility: visible !important;
@@ -653,12 +590,6 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button 
 </style>
 """, unsafe_allow_html=True)
 
-# ---- NEW: styling for the web-search toggle button is applied directly by
-# the JS component further below (via st.components.v1.html), not via CSS
-# classes here — this avoids relying on Streamlit's container(key=) feature,
-# which only exists in newer Streamlit versions. ----
-
-# ---- SETUP ----
 @st.cache_resource
 def load_embedder():
     return SentenceTransformer("all-MiniLM-L6-v2")
@@ -666,17 +597,8 @@ def load_embedder():
 embedder = load_embedder()
 supabase = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
-# ---- NEW: admin password, sourced from secrets like every other credential in
-# this app (never hardcode a password in source). Add to .streamlit/secrets.toml:
-#   ADMIN_PASSWORD = "your-password-here"
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD")
-# ---- END NEW ----
 
-# ---- NEW: chat-session-aware Supabase functions ----
-# Requires a `chat_id` (text) column on your `messages` table. In the Supabase
-# SQL editor, run:  ALTER TABLE messages ADD COLUMN chat_id text;
-# Existing rows saved before this column existed will have chat_id = NULL —
-# those get grouped into a "Previous Chat" entry on load so nothing is lost.
 def save_message(user_id, chat_id, role, content):
     supabase.table("messages").insert({
         "user_id": user_id,
@@ -705,10 +627,6 @@ def load_chats(user_id):
     for row in result.data:
         cid = row["chat_id"] or "legacy"
         if cid not in chats:
-            # NEW: pdf_store/image_store live per-chat now (not persisted to
-            # Supabase — uploads were always in-memory only), so every chat,
-            # including ones restored from history, starts with its own
-            # empty file stores rather than sharing one global store.
             chats[cid] = {"messages": [], "created": row["id"], "pdf_store": {}, "image_store": {}}
         chats[cid]["messages"].append({"role": row["role"], "content": row["content"]})
     for cid, chat in chats.items():
@@ -718,14 +636,10 @@ def load_chats(user_id):
 def delete_chat_messages(user_id, chat_id):
     query = supabase.table("messages").delete().eq("user_id", user_id)
     if chat_id == "legacy":
-        # "legacy" is just a Python-side grouping label for old rows saved
-        # before chat_id existed — those rows actually have chat_id = NULL
-        # in the database, not the string "legacy".
         query = query.is_("chat_id", "null")
     else:
         query = query.eq("chat_id", chat_id)
     query.execute()
-# ---- END NEW ----
 
 # ---- NEW: chat session management ----
 def new_chat():
@@ -733,33 +647,21 @@ def new_chat():
     st.session_state.chats[new_id] = {
         "title": "New Chat",
         "created": time.time(),
-        "messages": [],
-        # NEW: each chat owns its own file stores, so a new chat always
-        # starts with nothing attached — no leftover PDFs/images from
-        # whatever chat you were just in.
+        "messages": [],  # ← FIXED: Added this missing key
         "pdf_store": {},
         "image_store": {},
     }
     st.session_state.current_chat_id = new_id
     st.session_state.chips_used = False  # show the empty-state welcome screen again
-    # NEW: clear the sidebar file selectors too, since they're widget-level
-    # session state that would otherwise still show the old chat's selection
-    # until the user manually changes it.
     st.session_state["pdf_selectbox"] = NONE_OPTION
     st.session_state["image_selectbox"] = NONE_OPTION
 
 def delete_chat(chat_id):
     delete_chat_messages(st.session_state.user_id, chat_id)
     if chat_id in st.session_state.chats:
-        # NOTE: pdf_store/image_store live inside this chat's dict now, so
-        # deleting the chat entry automatically drops its uploaded files too
-        # — no separate cleanup step needed. Files were in-memory only
-        # (never written to Supabase), so nothing needs deleting there either.
         del st.session_state.chats[chat_id]
-    # Deleting the chat you're currently viewing auto-creates a fresh one.
     if st.session_state.current_chat_id == chat_id or not st.session_state.chats:
         new_chat()
-# ---- END NEW ----
 
 # ---- PDF UTILS ----
 def load_pdf(file):
@@ -779,7 +681,7 @@ def search_chunks(query, chunks, embeddings, n=3):
     top_indices = scores.argsort()[-n:][::-1]
     return [chunks[i] for i in top_indices]
 
-# ---- NEW: DATE/TIME + WEB SEARCH UTILS ----
+# ----  DATE/TIME + WEB SEARCH UTILS ----
 def get_current_datetime_str():
     """Returns the real current date/time from the system clock."""
     return datetime.now().strftime("%A, %B %d, %Y - %I:%M %p")
@@ -877,13 +779,11 @@ def gemini_vision_answer(user_input, image_bytes, mime_type, system_instruction,
         error_msg = f"⚠️ Vision request failed: {e}"
         placeholder.markdown(error_msg)
         return error_msg
-# ---- END NEW ----
 
-# ---- NEW: sentinel used to let PDF / Image selectboxes be explicitly turned off ----
+# ----  sentinel used to let PDF / Image selectboxes be explicitly turned off ----
 NONE_OPTION = "— None (off) —"
-# ---- END NEW ----
 
-# ---- NEW: strict either/or — picking one mode auto-deactivates the other ----
+# ----  strict either/or — picking one mode auto-deactivates the other ----
 def _on_pdf_selectbox_change():
     if st.session_state.get("pdf_selectbox") not in (None, NONE_OPTION):
         st.session_state["image_selectbox"] = NONE_OPTION
@@ -891,14 +791,7 @@ def _on_pdf_selectbox_change():
 def _on_image_selectbox_change():
     if st.session_state.get("image_selectbox") not in (None, NONE_OPTION):
         st.session_state["pdf_selectbox"] = NONE_OPTION
-# ---- END NEW ----
 
-# ---- NEW: unified attachment handler for the chat_input's native file
-# upload. Given one UploadedFile coming back from st.chat_input(accept_file=
-# ...), routes it into the CURRENT chat's pdf_store or image_store by
-# extension, reusing the exact same load_pdf/chunk_text/embedder pipeline
-# the old plus-menu uploaders used, then marks it as the active selection
-# (mirroring the old strict either/or behavior between the two selectboxes). ----
 def _handle_attached_file(uploaded_file):
     chat = st.session_state.chats[st.session_state.current_chat_id]
     name = uploaded_file.name
@@ -920,7 +813,6 @@ def _handle_attached_file(uploaded_file):
             }
         st.session_state["image_selectbox"] = name
         st.session_state["pdf_selectbox"] = NONE_OPTION
-# ---- END NEW ----
 
 # ---- SESSION STATE ----
 if "pending_message" not in st.session_state:
@@ -932,7 +824,7 @@ if "chips_used" not in st.session_state:
 if "user_id" not in st.session_state:
     st.session_state.user_id = str(uuid.uuid4())
 
-# ---- NEW: multi-chat session state ----
+# ----  multi-chat session state ----
 if "chats" not in st.session_state:
     st.session_state.chats = load_chats(st.session_state.user_id)
 
@@ -942,28 +834,18 @@ if "current_chat_id" not in st.session_state:
         st.session_state.current_chat_id = max(
             st.session_state.chats.items(), key=lambda kv: kv[1]["created"]
         )[0]
-        # Correct the naive chips_used=False default for returning users whose
+        # FIXED: Correct the naive chips_used=False default for returning users whose
         # most recent chat already has history — show messages, not the
         # empty-state welcome screen.
         active = st.session_state.chats[st.session_state.current_chat_id]
         st.session_state.chips_used = len(active["messages"]) > 0
     else:
         new_chat()
-# ---- END NEW ----
 
-# NOTE: pdf_store/image_store used to be initialized here as global,
-# shared-across-all-chats dicts. They now live inside each chat's own dict
-# (set in new_chat()/load_chats()), so there's nothing global to initialize
-# — every chat, old or new, already carries its own "pdf_store"/"image_store".
-
-# ---- NEW: web search toggle state ----
+# ----  web search toggle state ----
 if "web_search_enabled" not in st.session_state:
     st.session_state.web_search_enabled = False
-# ---- END NEW ----
 
-# ---- NEW: admin-gated settings — these must be initialized here (not just
-# inside the admin panel) since STEP 4 reads them every run regardless of
-# whether the admin panel has ever been unlocked. ----
 if "admin_unlocked" not in st.session_state:
     st.session_state.admin_unlocked = False
 if "system_prompt" not in st.session_state:
@@ -974,32 +856,15 @@ if "top_p" not in st.session_state:
     st.session_state.top_p = 1.0
 if "num_predict" not in st.session_state:
     st.session_state.num_predict = 1024
-# ---- END NEW ----
 
-# ---- NEW: model selection moved to the sidebar (right after the logo) —
-# state initialized here since the sidebar selectbox needs it immediately. ----
 model_options = [
     "llama-3.1-8b-instant",
     "llama-3.3-70b-versatile"
 ]
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = model_options[0]
-# ---- END NEW ----
 
-# ---- NEW: capture the chat input (and any attached file) BEFORE the sidebar
-# runs. This ordering is required, not cosmetic:
-#   1) The sidebar instantiates the `pdf_selectbox`/`image_selectbox` widgets
-#      further down. Streamlit forbids writing to a widget's session_state
-#      key AFTER that widget has been instantiated in the same run — doing
-#      so raises StreamlitAPIException. Handling the attachment here, before
-#      the sidebar runs, means the write always happens pre-instantiation.
-#   2) It also means `selected_image`/`selected_pdf` (computed in the sidebar
-#      from these same keys) reflect what was JUST attached in this exact
-#      turn — so the VLM/RAG routing below reacts to this message's
-#      attachment immediately, instead of lagging one turn behind.
-# st.chat_input() always renders pinned to the bottom of the page regardless
-# of where in the script it's called, so moving the call up here does not
-# change anything visually — the widget still appears in the same place.
+# ---- Capture chat input BEFORE sidebar ----
 chat_value = st.chat_input(
     "Ask anything...",
     accept_file=True,
@@ -1011,7 +876,6 @@ if chat_value:
     for f in chat_value.files:
         _handle_attached_file(f)
     user_input = chat_value.text or ""
-# ---- END NEW ----
 
 # ---- SIDEBAR ----
 with st.sidebar:
@@ -1031,9 +895,9 @@ with st.sidebar:
         index=model_options.index(st.session_state.selected_model),
         label_visibility="collapsed", key="sidebar_model_select"
     )
-    # ---- END NEW ----
+    
 
-    # ---- NEW: New Chat button + chat session list (replaces Clear Conversation) ----
+    # ----  New Chat button + chat session list (replaces Clear Conversation) ----
     if st.button("✙  New chat", use_container_width=True, key="new_chat_btn"):
         new_chat()
         st.rerun()
@@ -1062,14 +926,11 @@ with st.sidebar:
             if st.button(" 🗑️ ", key=f"del_{chat_id}"):
                 delete_chat(chat_id)
                 st.rerun()
-    # ---- END NEW ----
+   
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ---- NEW: Admin Settings (password-gated) ----
-    # System prompt / temperature / top_p / num_predict are read from
-    # st.session_state everywhere downstream, so they still have valid values
-    # even when this panel is locked and none of these widgets are rendering.
+    # ----  Admin Settings (password-gated) ----
     with st.expander("⚙️ Admin settings"):
         if not st.session_state.admin_unlocked:
             st.caption("Locked. Enter the admin password to change these.")
@@ -1100,10 +961,6 @@ with st.sidebar:
                 "Max response tokens", 128, 4096, st.session_state.num_predict, 128,
             )
 
-            # NOTE: this app supports multiple PDFs (pdf_store), unlike a
-            # single-document model — this clears only the currently ACTIVE
-            # one, not every uploaded PDF. Tell me if you actually want a
-            # bulk "clear everything" button instead.
             active_pdf_name = st.session_state.get("pdf_selectbox")
             if active_pdf_name and active_pdf_name != NONE_OPTION and st.button("Clear active document"):
                 del st.session_state.chats[st.session_state.current_chat_id]["pdf_store"][active_pdf_name]
@@ -1113,15 +970,9 @@ with st.sidebar:
             if st.button("🔒 Lock settings"):
                 st.session_state.admin_unlocked = False
                 st.rerun()
-    # ---- END NEW ----
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-    # ---- NEW: file uploaders removed from the sidebar — uploading now happens
-    # exclusively through the "+" attach icon built into the chat input bar
-    # itself. The "Active" selectboxes below read from the CURRENT CHAT's own
-    # pdf_store/image_store (not a global one), so switching chats only ever
-    # shows that chat's own files, and deleting a chat takes its files with it. ----
     current_pdf_store = st.session_state.chats[st.session_state.current_chat_id]["pdf_store"]
     current_image_store = st.session_state.chats[st.session_state.current_chat_id]["image_store"]
 
@@ -1160,8 +1011,7 @@ with st.sidebar:
             on_change=_on_image_selectbox_change
         )
         selected_image = None if image_choice == NONE_OPTION else image_choice
-    # ---- END NEW ----
-
+ 
     st.markdown("<hr>", unsafe_allow_html=True)
 
     current_messages = st.session_state.chats[st.session_state.current_chat_id]["messages"]
@@ -1178,11 +1028,7 @@ with st.sidebar:
 
     st.markdown("<hr>", unsafe_allow_html=True)
 
-# ---- NEW: chat-delete (🗑️) button styling ----
-# Each delete button has a per-chat dynamic key (del_<chat_id>), so there's no
-# single stable st-key-* class to target directly. Instead, a small JS pass
-# tags every button containing the trash icon with a shared class, then plain
-# CSS (the reliable approach, not JS inline styles) handles the actual look.
+# ---- Chat delete button styling ----
 st.markdown("""
 <style>
 [data-testid="stSidebar"] button.greeny-chat-delete-btn,
@@ -1245,11 +1091,77 @@ st.iframe(
 
 selected_model = st.session_state.selected_model
 
-st.markdown(f"""
-<div class="top-header" style="border-bottom:none; margin-top:0; padding-top:0; margin-bottom:0.3rem; padding-bottom:0.3rem; justify-content:flex-end;">
-    <div class="model-pill">{selected_model}</div>
-</div>
-""", unsafe_allow_html=True)
+st.iframe(
+    f"""
+    <style>
+    html, body {{
+        margin:0;
+        padding:0;
+        height:0;
+        overflow:hidden;
+    }}
+    </style>
+
+    <script>
+    (function() {{
+
+        function addModelPill() {{
+            const parentDoc = window.parent.document;
+
+            // Remove old pill
+            const old = parentDoc.getElementById("greeny-model-pill");
+            if (old) old.remove();
+
+            // Create new pill
+            const pill = parentDoc.createElement("div");
+            pill.id = "greeny-model-pill";
+
+            pill.innerHTML = `
+                <span style="
+                    width:6px;
+                    height:6px;
+                    background:#00A86B;
+                    border-radius:50%;
+                    display:inline-block;
+                    box-shadow:0 0 6px #00A86B;
+                    margin-right:8px;
+                "></span>
+                {selected_model}
+            `;
+
+            pill.style.position = "fixed";
+            pill.style.top = "80px";
+            pill.style.right = "85px";
+
+            pill.style.zIndex = "999999";
+
+            pill.style.background = "#1A1D1A";
+            pill.style.border = "1px solid rgba(0,98,65,.25)";
+            pill.style.borderRadius = "999px";
+
+            pill.style.padding = "6px 14px";
+
+            pill.style.color = "#00A86B";
+
+            pill.style.fontFamily = "Inter,sans-serif";
+            pill.style.fontSize = ".75rem";
+            pill.style.fontWeight = "600";
+
+            pill.style.display = "flex";
+            pill.style.alignItems = "center";
+
+            parentDoc.body.appendChild(pill);
+        }}
+
+        addModelPill();
+
+        setInterval(addModelPill,1000);
+
+    }})();
+    </script>
+    """,
+    height=1,
+)
 
 if selected_pdf:
     st.markdown(f"""
@@ -1299,10 +1211,6 @@ st.markdown("""
     filter: brightness(1.3);
     cursor: pointer;
 }
-/* NEW: Streamlit nests the button's label text in an inner element (e.g. a
-<p> tag) that carries its own font-size — setting font-size on the outer
-<button> alone doesn't override that. Targeting every descendant with `*`
-is the documented fix for this exact Streamlit quirk. */
 .st-key-web_toggle_btn button,
 .st-key-web_toggle_btn button * {
     font-size: 1.35rem !important;
@@ -1370,34 +1278,39 @@ st.iframe(
 if user_input:
     st.session_state.chips_used = True
 
-# REPLACE your chips block with this:
 if not st.session_state.chips_used:
     st.markdown("""
-    <div class="empty-state">
+    <div class="welcome-wrapper">
         <div class="empty-title">Where should we begin?</div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height:38px;'></div>", unsafe_allow_html=True)
+    # Space between title and pills
+    st.markdown("<div style='height:65px;'></div>", unsafe_allow_html=True)
 
     _, col, _ = st.columns([1, 2, 1])
+
     with col:
         c1, c2, c3, c4 = st.columns(4, gap="small")
+
         with c1:
             if st.button("📄 Summarize"):
                 st.session_state.pending_message = "Please summarize the uploaded document for me."
                 st.session_state.chips_used = True
                 st.rerun()
+
         with c2:
             if st.button("💻 Write code"):
                 st.session_state.pending_message = "Write me a Python function that"
                 st.session_state.chips_used = True
                 st.rerun()
+
         with c3:
             if st.button("🏖️ Best Places"):
                 st.session_state.pending_message = "What are the best places to visit in this area?"
                 st.session_state.chips_used = True
                 st.rerun()
+
         with c4:
             if st.button("🔍 Compare"):
                 st.session_state.pending_message = "Compare and contrast these two ideas:"
@@ -1426,8 +1339,8 @@ setTimeout(styleChips, 800);
 </script>
 """, unsafe_allow_html=True)
 
+# ---- Get current messages for display and processing ----
 current_messages = st.session_state.chats[st.session_state.current_chat_id]["messages"]
-# ---- END NEW ----
 
 # ---- STEP 3: DISPLAY MESSAGES ----
 for message in current_messages:
@@ -1444,7 +1357,7 @@ if not user_input and pending:
 current_messages.append({"role": "user", "content": user_input})
 save_message(st.session_state.user_id, st.session_state.current_chat_id, "user", user_input)
 
-# ----  auto-title the chat from its first message, ChatGPT-style ----
+# ----  auto-title the chat from its first message ----
 active_chat = st.session_state.chats[st.session_state.current_chat_id]
 if active_chat["title"] == "New Chat":
     active_chat["title"] = _derive_chat_title(current_messages)
@@ -1471,12 +1384,6 @@ with st.chat_message("assistant"):
         with st.spinner("Searching the web..."):
             web_context, web_sources = tavily_web_search(user_input)
    
-
-    # ----  PRIORITY ROUTING — an uploaded image always routes through Gemini,
-    # since Gemini can take the image + PDF context + web context + question all
-    # in one native multimodal call. This single branch covers every "image
-    # present" combination from the routing spec (image alone, image+PDF,
-    # image+web, image+PDF+web). ----
     if selected_image and selected_image in current_image_store:
         img_data = current_image_store[selected_image]
 
@@ -1548,7 +1455,6 @@ with st.chat_message("assistant"):
                 placeholder.markdown(full_response + "▌")
         placeholder.markdown(full_response)
 
-    # ----  show sources when a web search was actually used ----
     if web_sources:
         sources_md = "\n\n---\n**🌐 Sources:**\n" + "\n".join(
             [f"- [{s['title']}]({s['url']})" for s in web_sources if s.get("url")]
