@@ -6,18 +6,14 @@ from sentence_transformers import SentenceTransformer
 from supabase import create_client
 import uuid
 import time
-
-# ---- NEW: imports for live date/time + web search ----
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import streamlit.components.v1 as components
 try:
     from tavily import TavilyClient
     TAVILY_AVAILABLE = True
 except ImportError:
     TAVILY_AVAILABLE = False
-# ---- END NEW ----
-
-# ---- NEW: import for Gemini vision (image understanding) ----
 try:
     from google import genai
     from google.genai import types as genai_types
@@ -683,8 +679,9 @@ def search_chunks(query, chunks, embeddings, n=3):
 
 # ----  DATE/TIME + WEB SEARCH UTILS ----
 def get_current_datetime_str():
-    """Returns the real current date/time from the system clock."""
-    return datetime.now().strftime("%A, %B %d, %Y - %I:%M %p")
+    """Returns the real current date/time in IST, regardless of the host server's own timezone."""
+    ist = ZoneInfo("Asia/Kolkata")
+    return datetime.now(ist).strftime("%A, %B %d, %Y - %I:%M %p IST")
 
 def needs_web_search(query):
     """Lightweight keyword auto-detect for queries that likely need live info."""
