@@ -11,17 +11,19 @@ jobs:
     steps:
       - name: Ping Supabase to keep it active
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          RAW_URL: ${{ secrets.SUPABASE_URL }}
+          RAW_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ]; then
-            echo "❌ SUPABASE_URL secret is missing or empty"
+          # strip any whitespace/newlines/carriage returns picked up from copy-paste
+          SUPABASE_URL=$(echo -n "$RAW_URL" | tr -d '[:space:]')
+          SUPABASE_KEY=$(echo -n "$RAW_KEY" | tr -d '[:space:]')
+
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "❌ One or both secrets are empty after sanitizing"
             exit 1
           fi
-          if [ -z "$SUPABASE_KEY" ]; then
-            echo "❌ SUPABASE_KEY secret is missing or empty"
-            exit 1
-          fi
+
+          echo "URL length: ${#SUPABASE_URL} chars"
           curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
             "$SUPABASE_URL/rest/v1/messages?select=id&limit=1" \
             -H "apikey: $SUPABASE_KEY" \
