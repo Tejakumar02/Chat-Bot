@@ -1,4 +1,4 @@
-# ChatBot — Local ChatGPT-style UI for Ollama
+# ChatBot Local ChatGPT-style UI for Ollama
 
 A Streamlit front end for Ollama with model switching, RAG (PDF upload),
 free web search, an autonomous "Smart Mode," and password-protected admin
