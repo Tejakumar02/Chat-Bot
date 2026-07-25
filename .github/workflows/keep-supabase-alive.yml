@@ -1,0 +1,17 @@
+name: keep-supabase-alive
+
+on:
+  schedule:
+    - cron: '0 9 * * 1,4'   # every Monday & Thursday, 9am UTC
+  workflow_dispatch:         # lets you trigger it manually anytime
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase to keep it active
+        run: |
+          curl -s -o /dev/null -w "%{http_code}\n" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/messages?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
