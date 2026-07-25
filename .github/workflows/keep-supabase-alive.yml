@@ -16,10 +16,6 @@ jobs:
         run: |
           SUPABASE_URL=$(printf '%s' "$RAW_URL" | tr -d '[:space:]')
           SUPABASE_KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
-
-          echo "URL length: ${#SUPABASE_URL}"
-          echo "URL ends with: ${SUPABASE_URL: -10}"
-
           curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
             "$SUPABASE_URL/rest/v1/messages?select=id&limit=1" \
             -H "apikey: $SUPABASE_KEY" \
