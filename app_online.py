@@ -855,8 +855,8 @@ if "num_predict" not in st.session_state:
     st.session_state.num_predict = 1024
 
 model_options = [
-    "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile"
+    "openai/gpt-oss-20b",
+    "openai/gpt-oss-120b"     
 ]
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = model_options[0]
