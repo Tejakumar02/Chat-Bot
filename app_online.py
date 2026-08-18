@@ -856,6 +856,7 @@ if "num_predict" not in st.session_state:
 
 model_options = [
     "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
     "openai/gpt-oss-120b"     
 ]
 if "selected_model" not in st.session_state:
