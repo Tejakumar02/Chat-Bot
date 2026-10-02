@@ -1,22 +1,69 @@
-name: keep-supabase-alive
+name: Keep Supabase alive
 
 on:
   schedule:
-    - cron: '0 9 * * 1,4'
+    # Every 3 hours at minute 23 (UTC). Off the top of the hour because
+    # GitHub delays/drops :00 schedules under load. ~8 runs/day.
+    - cron: "23 */3 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Ping Supabase to keep it active
+      - name: Ping Supabase (write via RPC + read via REST)
         env:
           RAW_URL: ${{ secrets.SUPABASE_URL }}
           RAW_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          SUPABASE_URL=$(printf '%s' "$RAW_URL" | tr -d '[:space:]')
-          SUPABASE_KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
-          curl -s -o /dev/null -w "HTTP status: %{http_code}\n" \
-            "$SUPABASE_URL/rest/v1/messages?select=id&limit=1" \
-            -H "apikey: $SUPABASE_KEY" \
-            -H "Authorization: Bearer $SUPABASE_KEY"
+          set -euo pipefail
+
+          # Strip stray whitespace/newlines from secrets (the earlier exit-code-3 bug)
+          URL="$(printf '%s' "$RAW_URL" | tr -d '[:space:]')"
+          URL="${URL%/}"
+          KEY="$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')"
+
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "::error::SUPABASE_URL or SUPABASE_KEY secret is empty"
+            exit 1
+          fi
+
+          # call <label> <curl args...>  -> fails the job on anything that isn't 2xx
+          call() {
+            local label="$1"; shift
+            local code
+            code=$(curl -sS -o /tmp/body -w '%{http_code}' --max-time 30 \
+                     --retry 3 --retry-delay 10 --retry-all-errors \
+                     -H "apikey: $KEY" \
+                     -H "Authorization: Bearer $KEY" \
+                     "$@") || code="000"
+            echo "$label -> HTTP $code"
+            echo "Body: $(head -c 300 /tmp/body 2>/dev/null || true)"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+              echo "::error::$label failed with HTTP $code"
+              return 1
+            fi
+          }
+
+          # 1) Real write + read inside Postgres (insert heartbeat row, prune, count)
+          call "RPC keepalive (write)" -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"p_source":"github-actions"}' \
+            "$URL/rest/v1/rpc/keepalive"
+
+          # A 2xx alone is not proof; require the function's own ok:true
+          if ! grep -q '"ok"[[:space:]]*:[[:space:]]*true' /tmp/body; then
+            echo "::error::RPC returned 2xx but not ok:true"
+            exit 1
+          fi
+
+          # 2) Same read the app does on load
+          call "SELECT messages (read)" \
+            "$URL/rest/v1/messages?select=id&limit=1"
+
+          echo "Keep-alive OK"
