@@ -1095,6 +1095,7 @@ def _handle_attached_file(uploaded_file):
         st.session_state["pdf_selectbox"] = name
         st.session_state["image_selectbox"] = NONE_OPTION
         flash(f"“{name}” is ready — ask me anything about it.", ":material/description:")
+        return "pdf"
     else:
         if len(data) > MAX_IMAGE_BYTES:
             flash(f"“{name}” is larger than {MAX_IMAGE_BYTES // (1024 * 1024)} MB. Please attach a smaller image.",
@@ -1106,7 +1107,8 @@ def _handle_attached_file(uploaded_file):
         }
         st.session_state["image_selectbox"] = name
         st.session_state["pdf_selectbox"] = NONE_OPTION
-        flash(f"“{name}” attached — ask me about it.", ":material/image:")
+        flash(f"“{name}” is ready — ask me anything about it.", ":material/description:")
+        return "pdf"
 
 
 def clear_active_document():
@@ -1213,9 +1215,14 @@ chat_value = st.chat_input(
 
 user_input = ""
 if chat_value:
-    for f in chat_value.files:
-        _handle_attached_file(f)
+    attached = [_handle_attached_file(f) for f in chat_value.files]
     user_input = (chat_value.text or "").strip()
+    # FIX: a file sent with no text used to hit st.stop() (no message = no reply).
+    # Use a sensible default question for the file that was just attached.
+    if not user_input and "image" in attached:
+        user_input = "Describe this image in detail."
+    elif not user_input and "pdf" in attached:
+        user_input = "Please summarize the uploaded document for me."
     st.session_state.failed_turn = None  # a new message replaces an unanswered one
 
 # ---- SIDEBAR ----
