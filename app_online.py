@@ -1479,25 +1479,30 @@ if pending:
 if user_input:
     st.session_state.chips_used = True
 
+# FIX: Streamlit keeps elements from the previous run on screen (faded) until the
+# script overwrites their slot or the run ends. The welcome screen used 3 separate
+# slots, and the chips' slot was only overwritten after the reply finished streaming,
+# so they lingered for the whole reply. One fixed slot is cleared the moment we get here.
+welcome_slot = st.empty()
 if not st.session_state.chips_used:
-    st.markdown("""
-    <div class="welcome-wrapper">
-        <div class="empty-title">Where should we begin?</div>
-    </div>
-    """, unsafe_allow_html=True)
+    with welcome_slot.container():
+        st.markdown("""
+        <div class="welcome-wrapper">
+            <div class="empty-title">Where should we begin?</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # Space between title and pills
-    st.markdown("<div style='height:65px;'></div>", unsafe_allow_html=True)
+        # Space between title and pills
+        st.markdown("<div style='height:65px;'></div>", unsafe_allow_html=True)
 
-    with st.container(horizontal=True, horizontal_alignment="center", gap="small", key="welcome_chips"):
-        st.button("📄 Summarize", key="chip_summarize", on_click=chip_summarize)
-        st.button("💻 Write code", key="chip_code", on_click=prefill_input,
-                  args=("Write a Python function that ",))
-        st.button("🏖️ Best Places", key="chip_places", on_click=prefill_input,
-                  args=("What are the best places to visit in ",))
-        st.button("🔍 Compare", key="chip_compare", on_click=prefill_input,
-                  args=("Compare and contrast ",))
-
+        with st.container(horizontal=True, horizontal_alignment="center", gap="small", key="welcome_chips"):
+            st.button("📄 Summarize", key="chip_summarize", on_click=chip_summarize)
+            st.button("💻 Write code", key="chip_code", on_click=prefill_input,
+                      args=("Write a Python function that ",))
+            st.button("🏖️ Best Places", key="chip_places", on_click=prefill_input,
+                      args=("What are the best places to visit in ",))
+            st.button("🔍 Compare", key="chip_compare", on_click=prefill_input,
+                      args=("Compare and contrast ",))
 # ---- STEP 2: DISPLAY MESSAGES ----
 current_messages = current_chat()["messages"]
 for message in current_messages:
