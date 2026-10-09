@@ -400,15 +400,11 @@ iframe {
     max-width: 85% !important;
 }
 
-[data-testid="stChatMessageAvatarUser"] {
-    background: linear-gradient(135deg, var(--accent), var(--accent-light)) !important;
-    border-radius: 10px !important;
-}
-
+/* Avatars hidden. They stay in the DOM, so the :has(...) bubble rules above still
+   tell user and assistant messages apart. */
+[data-testid="stChatMessageAvatarUser"],
 [data-testid="stChatMessageAvatarAssistant"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
+    display: none !important;
 }
 
 /* ── CHAT INPUT ── */
