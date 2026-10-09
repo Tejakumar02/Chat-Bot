@@ -198,7 +198,7 @@ html, body, [data-testid="stAppViewContainer"],
 }
 
 /* ── SIDEBAR BUTTONS ── */
-[data-testid="stSidebar"] .stButton > button {
+[data-testid="stSidebar"] .stButton button {
     background: var(--bg-card) !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border) !important;
@@ -213,7 +213,7 @@ html, body, [data-testid="stAppViewContainer"],
     cursor: pointer !important;
 }
 
-[data-testid="stSidebar"] .stButton > button:hover {
+[data-testid="stSidebar"] .stButton button:hover {
     background: var(--accent-subtle) !important;
     color: var(--accent-light) !important;
     border-color: var(--accent) !important;
@@ -242,8 +242,8 @@ html, body, [data-testid="stAppViewContainer"],
     background: var(--bg-hover) !important;
     border-color: var(--border) !important;
 }
-[data-testid="stSidebar"] [class*="st-key-select_"] .stButton > button,
-[data-testid="stSidebar"] [class*="st-key-select_"] .stButton > button:hover {
+[data-testid="stSidebar"] [class*="st-key-select_"] .stButton button,
+[data-testid="stSidebar"] [class*="st-key-select_"] .stButton button:hover {
     justify-content: flex-start !important;
     text-align: left !important;
     padding: 0.4rem 0.7rem !important;
@@ -274,8 +274,8 @@ html, body, [data-testid="stAppViewContainer"],
     display: flex !important;
     justify-content: flex-end !important;
 }
-[data-testid="stSidebar"] [class*="st-key-del_"] .stButton > button,
-[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button {
+[data-testid="stSidebar"] [class*="st-key-del_"] .stButton button,
+[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton button {
     width: 30px !important;
     height: 30px !important;
     min-height: 30px !important;
@@ -292,13 +292,13 @@ html, body, [data-testid="stAppViewContainer"],
     color: var(--text-muted) !important;
     transition: color 0.15s ease !important;
 }
-[data-testid="stSidebar"] [class*="st-key-del_"] .stButton > button:hover {
+[data-testid="stSidebar"] [class*="st-key-del_"] .stButton button:hover {
     background: rgba(224, 82, 82, 0.15) !important;
 }
 [data-testid="stSidebar"] [class*="st-key-del_"] button:hover span {
     color: var(--danger) !important;
 }
-[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button:hover {
+[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton button:hover {
     background: var(--accent-subtle) !important;
 }
 [data-testid="stSidebar"] [class*="st-key-cancel_del_"] button:hover span {
@@ -310,8 +310,8 @@ html, body, [data-testid="stAppViewContainer"],
     background: rgba(224, 82, 82, 0.08) !important;
     border-color: rgba(224, 82, 82, 0.45) !important;
 }
-[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton > button,
-[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton > button:hover {
+[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton button,
+[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton button:hover {
     justify-content: flex-start !important;
     padding: 0.4rem 0.7rem !important;
     min-height: 0 !important;
@@ -533,7 +533,7 @@ iframe {
 /* FIX: chip styling is scoped to its own container. The old rules targeted every
    column block in the main area, contradicted each other (white vs grey text,
    zero padding) and relied on a script tag in st.markdown, which never executes. */
-.st-key-welcome_chips .stButton > button {
+.st-key-welcome_chips .stButton button {
     background: var(--accent) !important;
     border: none !important;
     border-radius: var(--radius-pill) !important;
@@ -543,12 +543,12 @@ iframe {
     white-space: nowrap !important;
     transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease !important;
 }
-.st-key-welcome_chips .stButton > button p {
+.st-key-welcome_chips .stButton button p {
     color: #ffffff !important;
     font-size: 0.8rem !important;
     font-weight: 500 !important;
 }
-.st-key-welcome_chips .stButton > button:hover {
+.st-key-welcome_chips .stButton button:hover {
     background: #004d33 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 3px 10px var(--accent-glow) !important;
