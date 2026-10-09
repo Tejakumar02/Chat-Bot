@@ -225,11 +225,32 @@ html, body, [data-testid="stAppViewContainer"],
     margin-top: 12px;
 }
 
-/* ── CHAT LIST (sidebar) ── */
-[data-testid="stSidebar"] [class*="st-key-select_"] .stButton > button {
+/* ── CHAT LIST (sidebar) ──
+   UX: each chat is one card (title + delete icon share a background), hover is green,
+   the active chat gets a green accent bar, and delete turns red only on hover. */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-select_"]),
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-confirm_del_"]) {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+    padding: 2px 4px 2px 2px !important;
+    gap: 0 !important;
+    align-items: center !important;
+    transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-select_"]):hover {
+    background: var(--bg-hover) !important;
+    border-color: var(--border) !important;
+}
+[data-testid="stSidebar"] [class*="st-key-select_"] .stButton > button,
+[data-testid="stSidebar"] [class*="st-key-select_"] .stButton > button:hover {
     justify-content: flex-start !important;
     text-align: left !important;
-    padding: 0.45rem 0.8rem !important;
+    padding: 0.4rem 0.7rem !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 [data-testid="stSidebar"] [class*="st-key-select_"] button > div {
     min-width: 0 !important;
@@ -240,35 +261,67 @@ html, body, [data-testid="stAppViewContainer"],
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     margin: 0 !important;
+    color: var(--text-secondary) !important;
+    transition: color 0.15s ease !important;
+}
+[data-testid="stSidebar"] [class*="st-key-select_"] button:hover p {
+    color: var(--accent-light) !important;
+}
+
+/* delete / cancel icon: small square that tints on hover */
+[data-testid="stSidebar"] [class*="st-key-del_"] .stButton,
+[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton {
+    display: flex !important;
+    justify-content: flex-end !important;
 }
 [data-testid="stSidebar"] [class*="st-key-del_"] .stButton > button,
-[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button,
-[data-testid="stSidebar"] [class*="st-key-del_"] .stButton > button:hover,
-[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button:hover {
+[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button {
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    padding: 0.3rem !important;
-    min-height: 0 !important;
+    justify-content: center !important;
 }
 [data-testid="stSidebar"] [class*="st-key-del_"] button span,
 [data-testid="stSidebar"] [class*="st-key-cancel_del_"] button span {
-    font-size: 1.15rem !important;
+    font-size: 1.1rem !important;
     color: var(--text-muted) !important;
     transition: color 0.15s ease !important;
+}
+[data-testid="stSidebar"] [class*="st-key-del_"] .stButton > button:hover {
+    background: rgba(224, 82, 82, 0.15) !important;
 }
 [data-testid="stSidebar"] [class*="st-key-del_"] button:hover span {
     color: var(--danger) !important;
 }
+[data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton > button:hover {
+    background: var(--accent-subtle) !important;
+}
 [data-testid="stSidebar"] [class*="st-key-cancel_del_"] button:hover span {
     color: var(--text-primary) !important;
 }
-[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton > button {
-    border-color: rgba(224, 82, 82, 0.6) !important;
+
+/* "Delete this chat?" confirm row is tinted red */
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-confirm_del_"]) {
     background: rgba(224, 82, 82, 0.08) !important;
+    border-color: rgba(224, 82, 82, 0.45) !important;
+}
+[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton > button,
+[data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton > button:hover {
+    justify-content: flex-start !important;
+    padding: 0.4rem 0.7rem !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 [data-testid="stSidebar"] [class*="st-key-confirm_del_"] button p {
     color: var(--danger) !important;
+    font-weight: 600 !important;
 }
 
 /* ── DOWNLOAD BUTTON ── */
@@ -1103,8 +1156,8 @@ def _handle_attached_file(uploaded_file):
         }
         st.session_state["image_selectbox"] = name
         st.session_state["pdf_selectbox"] = NONE_OPTION
-        flash(f"“{name}” is ready — ask me anything about it.", ":material/description:")
-        return "pdf"
+        flash(f"“{name}” attached — ask me about it.", ":material/image:")
+        return "image"
 
 
 def clear_active_document():
@@ -1362,9 +1415,11 @@ selected_model = st.session_state.selected_model
 
 # ---- Per-run CSS: active chat highlight + web toggle state (replaces the JS polling) ----
 active_css = f"""
-[data-testid="stSidebar"] .st-key-select_{st.session_state.current_chat_id} .stButton > button {{
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(.st-key-select_{st.session_state.current_chat_id}),
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has(.st-key-select_{st.session_state.current_chat_id}):hover {{
     background: var(--accent-subtle) !important;
     border-color: var(--accent) !important;
+    box-shadow: inset 3px 0 0 var(--accent-light) !important;
 }}
 [data-testid="stSidebar"] .st-key-select_{st.session_state.current_chat_id} button p {{
     color: var(--text-primary) !important;
@@ -1499,6 +1554,7 @@ if not st.session_state.chips_used:
                       args=("What are the best places to visit in ",))
             st.button("🔍 Compare", key="chip_compare", on_click=prefill_input,
                       args=("Compare and contrast ",))
+
 # ---- STEP 2: DISPLAY MESSAGES ----
 current_messages = current_chat()["messages"]
 for message in current_messages:
