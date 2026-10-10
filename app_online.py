@@ -31,7 +31,7 @@ st.set_page_config(
     page_title="Greeny-AI",
     page_icon="☘️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto",  # MOBILE: "expanded" opened the sidebar over the chat on phones
 )
 
 # ---- SETTINGS ----
@@ -415,9 +415,6 @@ iframe {
     box-shadow: 0 0 6px var(--accent-light);
 }
 
-@media (max-width: 640px) {
-    .model-pill { top: 64px; right: 16px; }
-}
 
 /* ── CHAT MESSAGES ──
    FIX: Streamlit's avatar test-ids are stChatMessageAvatarUser / stChatMessageAvatarAssistant.
@@ -695,6 +692,81 @@ section[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button 
     color: var(--accent-light);
     font-weight: 600;
     margin: 0 6px 0.8rem 0;
+}
+
+.welcome-spacer { height: 65px; }
+
+/* ── MOBILE (phones ≤ 640px) ── */
+@media (max-width: 640px) {
+    /* 2.5rem side padding left only ~310px for text on a 390px phone */
+    [data-testid="stMain"] .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+    [data-testid="stBottomBlockContainer"] {
+        padding-left: calc(1rem + var(--greeny-reserve, 0px)) !important;
+        padding-right: 1rem !important;
+    }
+    /* iOS Safari zooms the whole page when an input's text is < 16px */
+    [data-testid="stChatInput"] textarea { font-size: 16px !important; }
+
+    /* the fixed pill floated over messages while scrolling; sit inline with the status pills */
+    .model-pill {
+        position: static;
+        margin: 0 6px 0.8rem 0;
+        padding: 3px 10px;
+        font-size: 0.7rem;
+    }
+
+    .welcome-wrapper { margin-top: 20px; }
+    .empty-title { font-size: 1.45rem; }
+    .welcome-spacer { height: 24px; }
+    .st-key-welcome_chips .stButton button { padding: 9px 14px !important; }
+
+    [data-testid="stChatMessage"] { padding: 0.15rem 0 !important; }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) [data-testid="stChatMessageContent"] {
+        max-width: 88% !important;
+    }
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) [data-testid="stChatMessageContent"] {
+        max-width: 100% !important;
+        padding: 0.65rem 0.85rem !important;
+    }
+
+    /* touch targets: Apple/Google recommend ~44px */
+    [data-testid="stSidebar"] [class*="st-key-select_"] .stButton button,
+    [data-testid="stSidebar"] [class*="st-key-confirm_del_"] .stButton button {
+        min-height: 42px !important;
+    }
+    [data-testid="stSidebar"] [class*="st-key-del_"] .stButton button,
+    [data-testid="stSidebar"] [class*="st-key-cancel_del_"] .stButton button {
+        width: 42px !important;
+        height: 42px !important;
+        min-height: 42px !important;
+    }
+}
+
+/* ── TOUCH SCREENS: no hover, so don't leave "stuck" hover colours after a tap ── */
+@media (hover: none) {
+    [data-testid="stSidebar"] [data-testid="stHorizontalBlock"]:has([class*="st-key-select_"]):hover {
+        background: var(--bg-card) !important;
+        border-color: var(--border-subtle) !important;
+    }
+    [data-testid="stSidebar"] [class*="st-key-select_"] button:hover p {
+        color: var(--text-secondary) !important;
+    }
+    [data-testid="stSidebar"] [class*="st-key-del_"] .stButton button:hover {
+        background: transparent !important;
+    }
+    /* the delete icon was only readable on hover; make it visible by default on touch */
+    [data-testid="stSidebar"] [class*="st-key-del_"] button span,
+    [data-testid="stSidebar"] [class*="st-key-del_"] button:hover span {
+        color: var(--text-secondary) !important;
+    }
+    .st-key-welcome_chips .stButton button:hover {
+        transform: none !important;
+        background: var(--accent) !important;
+    }
 }
 
 </style>
@@ -1544,7 +1616,7 @@ if not st.session_state.chips_used:
         """, unsafe_allow_html=True)
 
         # Space between title and pills
-        st.markdown("<div style='height:65px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='welcome-spacer'></div>", unsafe_allow_html=True)
 
         with st.container(horizontal=True, horizontal_alignment="center", gap="small", key="welcome_chips"):
             st.button("📄 Summarize", key="chip_summarize", on_click=chip_summarize)
